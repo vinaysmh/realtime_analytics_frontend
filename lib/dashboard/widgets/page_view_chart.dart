@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+
 import '../../models/analytics_data.dart';
 
 class PageViewsChart extends StatefulWidget {
@@ -12,100 +13,116 @@ class PageViewsChart extends StatefulWidget {
 }
 
 class _PageViewsChartState extends State<PageViewsChart> {
-  static const int maxVisiblePoints = 30;
-  bool _isBar = false;
-
-  List<AnalyticsData> _getTrimmedData(List<AnalyticsData> fullData) {
-    if (fullData.length >= maxVisiblePoints) {
-      return fullData.sublist(fullData.length - maxVisiblePoints);
+  List<AnalyticsData> _getTrimmedData(List<AnalyticsData> fullData, int visibleCount) {
+    if (fullData.length >= visibleCount) {
+      return fullData.sublist(fullData.length - visibleCount);
     }
-    final paddingCount = maxVisiblePoints - fullData.length;
+    final paddingCount = visibleCount - fullData.length;
     final padded = List.generate(
       paddingCount,
       (_) => AnalyticsData(
         pageViews: 0,
         activeUsers: 0,
-        avgSessionDuration: "0",
+        avgSessionDuration: 0,
         timestamp: DateTime.now(),
       ),
     );
     return [...padded, ...fullData];
   }
 
-  List<FlSpot> _generateLineSpots(List<AnalyticsData> data) {
-    return data.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.pageViews.toDouble())).toList();
+  List<BarChartGroupData> _generateBarData(List<AnalyticsData> data) {
+    return data.asMap().entries.map((e) {
+      return BarChartGroupData(
+        x: e.key,
+        showingTooltipIndicators: [0],
+        barRods: [
+          BarChartRodData(
+            toY: e.value.pageViews.toDouble(),
+            color: Colors.green,
+            width: 10,
+          ),
+        ],
+      );
+    }).toList();
   }
 
-  List<BarChartGroupData> _generateBarData(List<AnalyticsData> data) {
-    return data
-        .asMap()
-        .entries
-        .map(
-          (e) => BarChartGroupData(
-            x: e.key,
-            barRods: [
-              BarChartRodData(
-                toY: e.value.pageViews.toDouble(),
-                color: Colors.blue,
-                width: 10,
+  BarTouchData get barTouchData => BarTouchData(
+        enabled: false,
+        touchTooltipData: BarTouchTooltipData(
+          getTooltipColor: (group) => Colors.transparent,
+          tooltipPadding: EdgeInsets.zero,
+          tooltipMargin: 8,
+          getTooltipItem: (
+            BarChartGroupData group,
+            int groupIndex,
+            BarChartRodData rod,
+            int rodIndex,
+          ) {
+            return BarTooltipItem(
+              rod.toY.round().toString(),
+              const TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
               ),
-            ],
-          ),
-        )
-        .toList();
-  }
+            );
+          },
+        ),
+      );
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.sizeOf(context);
-    final trimmedData = _getTrimmedData(widget.data);
-    final maxY = trimmedData.map((e) => e.pageViews).reduce((a, b) => a > b ? a : b).toDouble() + 10;
+    return Card(
+      margin: const EdgeInsets.all(12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const double barWidth = 10.0;
+            const double barSpacing = 4.0;
+            const int maxVisiblePoints = 30;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SwitchListTile(
-          value: _isBar,
-          onChanged: (val) => setState(() => _isBar = val),
-          title: const Text('Page Views (last 90 seconds)'),
-          subtitle: Text(_isBar ? 'Switch to Line Chart' : 'Switch to Bar Chart'),
-        ),
-        SizedBox(
-          height: size.height * 0.3,
-          child: _isBar
-              ? BarChart(
-                  BarChartData(
-                    minY: 0,
-                    maxY: maxY,
-                    barGroups: _generateBarData(trimmedData),
-                    titlesData: FlTitlesData(show: false),
-                    borderData: FlBorderData(show: true),
-                    gridData: FlGridData(show: true),
-                  ),
-                )
-              : LineChart(
-                  LineChartData(
-                    minX: 0,
-                    maxX: maxVisiblePoints - 1,
-                    minY: 0,
-                    maxY: maxY,
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: _generateLineSpots(trimmedData),
-                        isCurved: true,
-                        color: Colors.green,
-                        barWidth: 3,
-                        dotData: FlDotData(show: false),
-                        belowBarData: BarAreaData(show: false),
-                      ),
-                    ],
-                    titlesData: FlTitlesData(show: false),
-                    borderData: FlBorderData(show: true),
-                    gridData: FlGridData(show: true),
+            final availableWidth = constraints.maxWidth;
+            final double totalBarUnitWidth = (barWidth + barSpacing) * 3;
+            final int barCount = (availableWidth / totalBarUnitWidth).floor().clamp(5, maxVisiblePoints); // clamp for min 5 bars
+
+            final visibleData = _getTrimmedData(widget.data, barCount);
+            final maxY = visibleData.map((e) => e.pageViews).reduce((a, b) => a > b ? a : b).toDouble() + 10;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Page Views (Last $barCount Records)",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.4,
+                  child: BarChart(
+                    BarChartData(
+                      minY: 0,
+                      maxY: maxY,
+                      barGroups: _generateBarData(visibleData),
+                      titlesData: FlTitlesData(
+                        show: true,
+                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      ),
+                      borderData: FlBorderData(show: true),
+                      gridData: FlGridData(show: true),
+                      barTouchData: barTouchData,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 }

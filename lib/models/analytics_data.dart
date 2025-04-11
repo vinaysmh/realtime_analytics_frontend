@@ -2,7 +2,7 @@ class AnalyticsData {
   final int pageViews;
   final int activeUsers;
   final DateTime timestamp;
-  final String avgSessionDuration;
+  final double avgSessionDuration;
 
   AnalyticsData({
     required this.pageViews,

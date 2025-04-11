@@ -50,6 +50,7 @@ class MainApp extends StatelessWidget {
         ],
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
+          title: "Real-Time Analytics Dashboard",
           themeMode: ThemeMode.dark,
           theme: ThemeData.light(),
           darkTheme: ThemeData.dark(),

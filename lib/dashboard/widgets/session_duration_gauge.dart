@@ -1,60 +1,96 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import '../../models/analytics_data.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../logic/bloc/unified_analytics_stream_bloc.dart';
 
 class SessionDurationGauge extends StatelessWidget {
-  final AnalyticsData latestData;
-
-  const SessionDurationGauge({
-    super.key,
-    required this.latestData,
-  });
-
-  /// Converts decimal minutes to whole seconds
-  int _toSeconds(String decimalMinutes) {
-    final parsed = double.tryParse(decimalMinutes);
-    return parsed != null ? (parsed * 60).round() : 0;
-  }
+  const SessionDurationGauge({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final int seconds = _toSeconds(latestData.avgSessionDuration);
-    const int maxSeconds = 600; // 10 minutes = 600 seconds
-    final double progress = (seconds / maxSeconds).clamp(0.0, 1.0);
-    Size size = MediaQuery.sizeOf(context);
-    return SizedBox(
-      width: size.width * 0.49,
-      height: size.height * 0.4,
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Avg. Session Duration',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        double chartSize = constraints.maxWidth * 0.4;
+        double fontSize = constraints.maxWidth < 300 ? 24 : 32;
+
+        return Card(
+          margin: const EdgeInsets.all(12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.start,
+              runSpacing: 16,
+              spacing: 16,
+              children: [
+                // Text group
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: constraints.maxWidth * 0.5),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Avg. Session Duration',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      BlocBuilder<UnifiedAnalyticsBloc, UnifiedAnalyticsState>(
+                        builder: (context, uas) {
+                          return Text(
+                            uas is UnifiedAnalyticsSuccess ? "${uas.avgSessionDuration} seconds" : "...",
+                            style: TextStyle(
+                              fontSize: fontSize,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              LinearProgressIndicator(
-                value: progress,
-                backgroundColor: Colors.grey.shade300,
-                color: Colors.green,
-                minHeight: 10,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "$seconds seconds",
-                style: const TextStyle(fontSize: 14),
-              ),
-            ],
+
+                // Chart
+                SizedBox(
+                  width: chartSize,
+                  height: chartSize,
+                  child: BlocBuilder<UnifiedAnalyticsBloc, UnifiedAnalyticsState>(
+                    builder: (context, uas) {
+                      double progress = uas is UnifiedAnalyticsSuccess ? uas.sessionProgress : 0.0;
+                      return PieChart(
+                        PieChartData(
+                          startDegreeOffset: 270,
+                          sectionsSpace: 0,
+                          centerSpaceRadius: chartSize * 0.15,
+                          sections: [
+                            PieChartSectionData(
+                              value: progress,
+                              color: Colors.green,
+                              radius: chartSize * 0.2,
+                              showTitle: false,
+                            ),
+                            PieChartSectionData(
+                              value: 1 - progress,
+                              color: Colors.grey.withValues(alpha: 0.2),
+                              radius: chartSize * 0.2,
+                              showTitle: false,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

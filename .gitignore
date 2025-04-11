@@ -25,6 +25,12 @@ doc/api/
 
 .flutter-plugins
 .flutter-plugins-dependencies
-.fvm
 .idea
 .vscode
+
+# FVM Version Cache
+.fvm/
+# Firebase Hosting files
+.firebase/
+.firebaserc
+firebase.json
