@@ -6,6 +6,21 @@ Live URL: [https://realtime-analytics-dashboard.web.app](https://realtime-analyt
 
 ---
 
+## Screenshots and GIF
+
+### Web Version Walkthrough
+![Web Version Walkthrough](screenshots/walkthrough.gif)
+
+### WebSocket Mode
+![WebSocket Web Screenshot](screenshots/websocket_web.png)
+![WebSocket Mobile Screenshot](screenshots/websocket_mobile.png)
+### Polling Mode
+![Polling Web Screenshot](screenshots/polling_web.png)
+![Polling Mobile Screenshot](screenshots/polling_mobile.png)
+
+
+---
+
 ## Features
 
 - Real-time and polling-based data fetching
@@ -161,7 +176,8 @@ lib/
 ├── main.dart                # App entry point
 └── home_page.dart           # Top-level layout and view selector
 ```
-
+### Complete Folder Structure
+![Complete Folder Structure](screenshots/folder_structure.png)
 ---
 
 ## Utility Logic
