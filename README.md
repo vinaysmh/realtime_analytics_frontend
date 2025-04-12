@@ -8,6 +8,10 @@ Live URL: [https://realtime-analytics-dashboard.web.app](https://realtime-analyt
 
 ## Screenshots and GIF
 
+### Architecture
+![Architecture1](screenshots/control_flow_diagram.png)
+![Architecture2](screenshots/high_level_architecture.png)
+
 ### Web Version Walkthrough
 ![Web Version Walkthrough](screenshots/walkthrough.gif)
 
