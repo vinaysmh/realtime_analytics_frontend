@@ -1,94 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../logic/bloc/polled_analytics_bloc.dart';
-import '../logic/bloc/realtime_analytics_bloc.dart';
-import '../logic/bloc/unified_analytics_stream_bloc.dart';
-import 'widgets/active_user_card.dart';
-import 'widgets/page_view_chart.dart';
-import 'widgets/session_duration_gauge.dart';
+import '../blocs/polled_analytics_bloc.dart';
+import '../blocs/realtime_analytics_bloc.dart';
+import 'analyticsViews/polled_analytics_view.dart';
+import 'analyticsViews/realtime_analytics_view.dart';
 
-class Dashboard extends StatefulWidget {
-  const Dashboard({super.key});
+class AnalyticsDashboard extends StatefulWidget {
+  const AnalyticsDashboard({super.key});
 
   @override
-  State<Dashboard> createState() => _DashboardState();
+  State<AnalyticsDashboard> createState() => _AnalyticsDashboardState();
 }
 
-class _DashboardState extends State<Dashboard> {
+class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
   @override
   void initState() {
-    super.initState();
     context.read<PolledAnalyticsBloc>().add(StartAnalyticsPolling());
     context.read<RealtimeAnalyticsBloc>().add(StartRealtimeAnalytics());
-    context.read<UnifiedAnalyticsBloc>().add(StartUnifiedAnalytics());
+
+    super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        centerTitle: false,
-        title: const Text("Real-Time Analytics Dashboard"),
-      ),
-      body: SafeArea(
-        child: BlocBuilder<UnifiedAnalyticsBloc, UnifiedAnalyticsState>(
-          builder: (context, uas) {
-            if (uas is UnifiedAnalyticsSuccess && uas.dataList.isNotEmpty) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final gridWidgets = [
-                          const SessionDurationGauge(),
-                          const ActiveUsersCard(),
-                        ];
-
-                        return Wrap(
-                          spacing: 20,
-                          runSpacing: 20,
-                          children: gridWidgets.map((widget) {
-                            double cardWidth = constraints.maxWidth < 600 ? constraints.maxWidth : (constraints.maxWidth - 20) / 2;
-
-                            return SizedBox(
-                              width: cardWidth,
-                              child: widget,
-                            );
-                          }).toList(),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 30),
-                    SizedBox(
-                      width: double.infinity,
-                      child: PageViewsChart(data: uas.dataList),
-                    ),
-                  ],
-                ),
-              );
-            } else if (uas is UnifiedAnalyticsFailure) {
-              return const Center(
-                child: Text("Failed to fetch data\nPlease try again later"),
-              );
-            } else {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 80),
-                    Text(
-                      "Loading...\nSince the backend is deployed on a free version of render.com, it may take a while to load if the app is idle for a long time.\nJust for the first run by you, please bear until data loads",
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              );
-            }
-          },
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          centerTitle: false,
+          title: const Text("Analytics Dashboard"),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: "Realtime Data"),
+              Tab(text: "Polled Data"),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            // Realtime tab content
+            RealtimeAnalyticsView(),
+            // Polled tab content
+            PolledAnalyticsView(),
+          ],
         ),
       ),
     );

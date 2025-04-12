@@ -14,10 +14,15 @@ class PageViewsChart extends StatefulWidget {
 
 class _PageViewsChartState extends State<PageViewsChart> {
   List<AnalyticsData> _getTrimmedData(List<AnalyticsData> fullData, int visibleCount) {
+    List<AnalyticsData> trimmed;
+
     if (fullData.length >= visibleCount) {
-      return fullData.sublist(fullData.length - visibleCount);
+      trimmed = fullData.sublist(fullData.length - visibleCount);
+    } else {
+      trimmed = [...fullData];
     }
-    final paddingCount = visibleCount - fullData.length;
+
+    final paddingCount = visibleCount - trimmed.length;
     final padded = List.generate(
       paddingCount,
       (_) => AnalyticsData(
@@ -27,14 +32,14 @@ class _PageViewsChartState extends State<PageViewsChart> {
         timestamp: DateTime.now(),
       ),
     );
-    return [...padded, ...fullData];
+
+    return [...padded, ...trimmed]; // Guaranteed to be length == visibleCount
   }
 
   List<BarChartGroupData> _generateBarData(List<AnalyticsData> data) {
     return data.asMap().entries.map((e) {
       return BarChartGroupData(
         x: e.key,
-        showingTooltipIndicators: [0],
         barRods: [
           BarChartRodData(
             toY: e.value.pageViews.toDouble(),
@@ -45,29 +50,6 @@ class _PageViewsChartState extends State<PageViewsChart> {
       );
     }).toList();
   }
-
-  BarTouchData get barTouchData => BarTouchData(
-        enabled: false,
-        touchTooltipData: BarTouchTooltipData(
-          getTooltipColor: (group) => Colors.transparent,
-          tooltipPadding: EdgeInsets.zero,
-          tooltipMargin: 8,
-          getTooltipItem: (
-            BarChartGroupData group,
-            int groupIndex,
-            BarChartRodData rod,
-            int rodIndex,
-          ) {
-            return BarTooltipItem(
-              rod.toY.round().toString(),
-              const TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
-              ),
-            );
-          },
-        ),
-      );
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +69,7 @@ class _PageViewsChartState extends State<PageViewsChart> {
             final int barCount = (availableWidth / totalBarUnitWidth).floor().clamp(5, maxVisiblePoints); // clamp for min 5 bars
 
             final visibleData = _getTrimmedData(widget.data, barCount);
-            final maxY = visibleData.map((e) => e.pageViews).reduce((a, b) => a > b ? a : b).toDouble() + 10;
+            final maxY = visibleData.isNotEmpty ? visibleData.map((e) => e.pageViews).reduce((a, b) => a > b ? a : b).toDouble() + 10 : 10.0;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,18 +86,16 @@ class _PageViewsChartState extends State<PageViewsChart> {
                   height: MediaQuery.of(context).size.height * 0.4,
                   child: BarChart(
                     BarChartData(
-                      minY: 0,
-                      maxY: maxY,
-                      barGroups: _generateBarData(visibleData),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      ),
-                      borderData: FlBorderData(show: true),
-                      gridData: FlGridData(show: true),
-                      barTouchData: barTouchData,
-                    ),
+                        minY: 0,
+                        maxY: maxY,
+                        barGroups: _generateBarData(visibleData),
+                        titlesData: FlTitlesData(
+                          show: true,
+                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        ),
+                        borderData: FlBorderData(show: true),
+                        gridData: FlGridData(show: true)),
                   ),
                 ),
               ],
